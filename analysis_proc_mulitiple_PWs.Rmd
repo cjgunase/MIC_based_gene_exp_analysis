@@ -1,0 +1,333 @@
+---
+title: "Chapter2_MIC_ODE_Gene_net"
+author: "Chathura"
+date: "August 30, 2016"
+output: 
+  html_document: 
+    fig_height: 15
+    fig_width: 12
+---
+good resource about variable pruning.
+http://www.win-vector.com/blog/2016/09/variables-can-synergize-even-in-a-linear-model/
+
+```{r}
+#import data
+library(clusterSim)
+library(gplots)
+library(RColorBrewer)
+
+association <-read.csv("./mic_allPW_top10TF.csv",header=T,sep = ",",stringsAsFactors=FALSE)
+colnames(association)
+# colnames(association)<-c("Pathway_ID","Pathway_name","PW_gene_id","PW_gene_sym","TF_gene_id","TF_gene_sym",
+#                          "MIC..strength.","MIC.p.2..nonlinearity.","MAS..non.monotonicity.","MEV..functionality." ,"MCN..complexity.","Linear.regression..p." )
+
+#association <- association[association['MIC..strength.'] > 0.5,]
+
+#expr.data <- read.csv("./six_pathway_1622TF_exp_sep1.csv",header = FALSE)
+#anno <-read.table("./AT_ID_SYM.txt",sep = "\t",header = F)
+#pathway_id_2_name <-read.csv("./pathway_id_2_name.csv",header = F)
+#as.character(pathway_id_2_name[pathway_id_2_name$V1==2,]$V2)
+
+#Test files for inconsistancies like duplication of TF_symbol
+#length(anno$V1)
+#length(unique(anno$V1))
+
+#row.names(expr.data) <- expr.data[,1]
+#expr.data$V1 <-NULL
+#expr.data<-as.data.frame(t(expr.data))
+#row.names(expr.data)<-1:128
+```
+
+
+```{r}
+smoothing_parameter = 0.2
+create_empty_table <- function(num_rows, num_cols) {
+    frame <- data.frame(matrix(NA, nrow = num_rows, ncol = num_cols))
+    return(frame)
+}
+
+#sink("TOPTF for each Pathway")
+for (i in unique(association$pw_index) ){
+  
+  
+  
+  
+  
+  
+  
+  
+  i = 16
+  selected.TFs<-c()
+  tempPW <- association[association$pw_index==i,]
+  tempPW <- tempPW[ order(-tempPW[,6]),]
+  
+  for (j in unique(tempPW$pwg_sym)){
+    #cutoff <- 10
+    pwg_df <- tempPW[tempPW$pwg_sym==j,]
+    #topTFs<-pwg_df[1:cutoff,]
+    #topTFs<-na.omit(topTFs)
+    selected.TFs<-c(selected.TFs,pwg_df$tf_sym)
+    
+  }
+  
+  selected.PWs<-unique(tempPW$pwg_sym)
+  selected.TFs<-unique(selected.TFs)
+  
+  MIC_strenght<-create_empty_table(length(selected.TFs),length(selected.PWs))
+
+  colnames(MIC_strenght) <- selected.PWs
+  rownames(MIC_strenght) <- selected.TFs
+
+  for (pw_i in selected.PWs){
+    temp <- tempPW[tempPW$pwg_sym==pw_i,]
+    pw <-c()
+    for (tf_j in selected.TFs){
+       if(tf_j %in% as.vector(temp$tf_sym)){
+         row <-temp[temp$tf_sym==tf_j,]
+         pw<-c(pw,row$MIC..strength.[1])
+         
+       }else{
+         pw<-c(pw,0)
+       }
+    }
+  
+  MIC_strenght[[pw_i]]<-pw  
+  }
+  
+for (pw_genes in colnames(MIC_strenght)){
+  
+  if(sum(MIC_strenght[[pw_genes]])/length(selected.TFs) < smoothing_parameter){
+    MIC_strenght[[pw_genes]] <-NULL
+  }
+}
+#MIC_strenght <- data.Normalization (MIC_strenght,type="n4",normalization="column")  
+  
+mat_data <- data.matrix(MIC_strenght)
+my_palette <- colorRampPalette(c("red", "yellow", "green"))(n = 299)
+col_breaks = c(seq(0,0.75,length=100),   # for red
+   seq(0.75,0.85,length=100),            # for yellow
+   seq(0.85,1,length=100))              # for green
+outputfile = paste0(c("./pathway",i,".jpg"),collapse = "")
+#main_title <-paste0(c("Pathway Name : ",as.character(pathway_id_2_name[pathway_id_2_name$V1==i,]$V2)),collapse = " ")
+png(outputfile,width = 10*300, height = 15*300,res = 600,pointsize = 4)
+heatmap.2(mat_data,
+  #cellnote = mat_data,  # same data set for cell labels
+  #main = main_title, # heat map title
+  main = i,
+  notecol="black",      # change font color of cell labels to black
+  density.info="none",  # turns off density plot inside color legend
+  trace="none",         # turns off trace lines inside the heat map
+  #margins =c(6,3),     # widens margins around plot
+  col=my_palette,       # use on color palette defined earlier
+  #breaks=col_breaks,    # enable color transition at specified limits
+  dendrogram="both",     # only draw a row dendrogram
+  #Colv="NA",# turn off column clustering
+  key = TRUE,
+  #Rowv = "NA",
+  keysize = 0.5)            
+dev.off()
+
+# hc.rows<- hclust(dist(mat_data))
+# 
+# plot(hc.rows)
+# 
+# 
+# ct<- cutree(hc.rows, h=3) # it gives me 6 groups
+# 
+# rect.hclust(hc.rows, h=3) # draw red rectangles to mark the subgroups
+# 
+# table(ct)
+# 
+# ct
+# 
+# 
+# tableclust<- data.frame(ct)
+
+
+
+  
+}
+
+
+
+
+```
+
+```{r}
+tempPW2 <- association[association$Pathway_ID==2,]
+tempPW7 <- association[association$Pathway_ID==7,]
+tempPW9 <- association[association$Pathway_ID==9,]
+tempPW <- rbind(tempPW2,tempPW7,tempPW9)
+tempPW <- tempPW[ order(-tempPW[,7]),]
+#tempPW$PW_gene_sym <- paste(tempPW$Pathway_ID,tempPW$PW_gene_sym,sep = "_")
+selected.TFs<-c()
+
+for (j in unique(tempPW$PW_gene_sym)){
+  cutoff <- 10
+  pwg_df <- tempPW[tempPW$PW_gene_sym==j,]
+  topTFs<-pwg_df[1:cutoff,]
+  topTFs<-na.omit(topTFs)
+  selected.TFs<-c(selected.TFs,topTFs$TF_gene_sym)
+}
+
+
+create_empty_table <- function(num_rows, num_cols) {
+    frame <- data.frame(matrix(NA, nrow = num_rows, ncol = num_cols))
+    return(frame)
+}
+
+selected.PWs<-unique(tempPW$PW_gene_sym)
+selected.TFs<-unique(selected.TFs)
+selected.PWs <- sort(selected.PWs)
+MIC_strenght<-create_empty_table(length(selected.TFs),length(selected.PWs))
+colnames(MIC_strenght) <- selected.PWs
+rownames(MIC_strenght) <- selected.TFs
+
+  for (pw_i in selected.PWs){
+    temp <- tempPW[tempPW$PW_gene_sym==pw_i,]
+    pw <-c()
+    for (tf_j in selected.TFs){
+       if(tf_j %in% as.vector(temp$TF_gene_sym)){
+         row <-temp[temp$TF_gene_sym==tf_j,]
+         pw<-c(pw,row$MIC..strength.[1])
+         
+       }else{
+         pw<-c(pw,0)
+       }
+    }
+  
+  MIC_strenght[[pw_i]]<-pw  
+  }
+smoothing_parameter = 0.2
+for (pw_genes in colnames(MIC_strenght)){
+  
+  if(sum(MIC_strenght[[pw_genes]])/length(selected.TFs) < smoothing_parameter){
+    MIC_strenght[[pw_genes]] <-NULL
+  }
+}
+#MIC_strenght <- data.Normalization (MIC_strenght,type="n4",normalization="column")  
+
+mat_data <- data.matrix(MIC_strenght)
+my_palette <- colorRampPalette(c("red", "yellow", "green"))(n = 299)
+col_breaks = c(seq(0,0.75,length=100),   # for red
+   seq(0.75,0.85,length=100),            # for yellow
+   seq(0.85,1,length=100))              # for green
+outputfile = paste0(c("./pathway2_7_9.jpg"),collapse = "")
+#main_title <-paste0(c("Pathway Name : ",as.character(pathway_id_2_name[pathway_id_2_name$V1==i,]$V2)),collapse = " ")
+png(outputfile,width = 15*300, height = 20*300,res = 1200,pointsize = 1.5)
+
+heatmap.2(mat_data,
+  #cellnote = mat_data,  # same data set for cell labels
+  main = "Three PWs together", # heat map title
+  notecol="black",      # change font color of cell labels to black
+  density.info="none",  # turns off density plot inside color legend
+  trace="none",         # turns off trace lines inside the heat map
+  #margins =c(6,3),     # widens margins around plot
+  col=my_palette,       # use on color palette defined earlier
+  #breaks=col_breaks,    # enable color transition at specified limits
+  dendrogram="row",     # only draw a row dendrogram
+  Colv="NA",# turn off column clustering
+  key = TRUE,
+  #Rowv = "NA",
+  keysize = 0.15,
+  #distfun=dist_fun, 
+  #hclustfun=hclust_fun
+  )            
+dev.off()
+
+
+#sink("TOPTF for each Pathway")
+for (i in unique(association$Pathway_ID) ){
+  i = 2
+  selected.TFs<-c()
+  tempPW <- association[association$Pathway_ID==2,]
+  tempPW1 <- association[association$Pathway_ID==3,]
+  tempPW = rbind(tempPW,tempPW1)
+  tempPW <- tempPW[ order(-tempPW[,7]),]
+  
+  tempPW$PW_gene_sym <- paste(tempPW$PW_gene_sym,tempPW$Pathway_ID,sep = "_")
+  
+  for (j in unique(tempPW$PW_gene_sym)){
+    cutoff <- 10
+    pwg_df <- tempPW[tempPW$PW_gene_sym==j,]
+    topTFs<-pwg_df[1:cutoff,]
+    topTFs<-na.omit(topTFs)
+    selected.TFs<-c(selected.TFs,topTFs$TF_gene_sym)
+    
+}
+  
+  selected.PWs<-unique(tempPW$PW_gene_sym)
+  selected.TFs<-unique(selected.TFs)
+  
+  MIC_strenght<-create_empty_table(length(selected.TFs),length(selected.PWs))
+  
+  colnames(MIC_strenght) <- selected.PWs
+  rownames(MIC_strenght) <- selected.TFs
+
+  for (pw_i in selected.PWs){
+    temp <- tempPW[tempPW$PW_gene_sym==pw_i,]
+    pw <-c()
+    for (tf_j in selected.TFs){
+       if(tf_j %in% as.vector(temp$TF_gene_sym)){
+         row <-temp[temp$TF_gene_sym==tf_j,]
+         pw<-c(pw,row$MIC..strength.[1])
+         
+       }else{
+         pw<-c(pw,0)
+       }
+    }
+  
+  MIC_strenght[[pw_i]]<-pw  
+  }
+  
+for (pw_genes in colnames(MIC_strenght)){
+  
+  if(sum(MIC_strenght[[pw_genes]])/length(selected.TFs) < smoothing_parameter){
+    MIC_strenght[[pw_genes]] <-NULL
+  }
+}
+MIC_strenght <- data.Normalization (MIC_strenght,type="n4",normalization="column")  
+  
+mat_data <- data.matrix(MIC_strenght)
+my_palette <- colorRampPalette(c("red", "yellow", "green"))(n = 299)
+col_breaks = c(seq(0,0.5,length=100),   # for red
+   seq(0.5,0.8,length=100),            # for yellow
+   seq(0.81,1,length=100))              # for green
+outputfile = paste0(c("./pathway",i,".jpg"),collapse = "")
+main_title <-paste0(c("Pathway Name : ",as.character(pathway_id_2_name[pathway_id_2_name$V1==i,]$V2)),collapse = " ")
+png(outputfile,width = 10*300, height = 15*300,res = 600,pointsize = 4)
+heatmap.2(mat_data,
+  #cellnote = mat_data,  # same data set for cell labels
+  main = main_title, # heat map title
+  notecol="black",      # change font color of cell labels to black
+  density.info="none",  # turns off density plot inside color legend
+  trace="none",         # turns off trace lines inside the heat map
+  #margins =c(6,3),     # widens margins around plot
+  col=my_palette,       # use on color palette defined earlier
+  #breaks=col_breaks,    # enable color transition at specified limits
+  dendrogram="row",     # only draw a row dendrogram
+  Colv="NA",# turn off column clustering
+  key = TRUE,
+  #Rowv = "NA",
+  keysize = 0.5)            
+dev.off()
+
+hc.rows<- hclust(dist(mat_data))
+
+plot(hc.rows)
+
+
+ct<- cutree(hc.rows, h=3) # it gives me 6 groups
+
+rect.hclust(hc.rows, h=3) # draw red rectangles to mark the subgroups
+
+table(ct)
+
+ct
+
+
+tableclust<- data.frame(ct)
+}
+```
+
+
