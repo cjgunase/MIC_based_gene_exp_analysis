@@ -1,8 +1,8 @@
 # MIC_based_gene_exp_analysis
 This project will investigate linear and non-linear associations between genes to construct gene regulatory network and identity important genes.
 
-[Maximum Information Coefficient(MIC)](https://www.youtube.com/watch?v=Onbn285lris)
-[![Maximum Information Coefficient](http://img.youtube.com/vi/Yv=Onbn285lris/0.jpg)](http://www.youtube.com/watch?v=v=Onbn285lris)
+
+[![Maximum Information Coefficient](http://img.youtube.com/vi/Onbn285lris/0.jpg)](https://www.youtube.com/watch?v=Onbn285lris)
 
 steps
 
