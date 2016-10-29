@@ -6,7 +6,7 @@ When constructing a gene regulatory network or analysing gene expression dataset
 
 More information about MIC can be found here. 
 
-![Maximum Information Coefficient](http://img.youtube.com/vi/Onbn285lris/0.jpg)](https://www.youtube.com/watch?v=Onbn285lris)
+[![Maximum Information Coefficient](http://img.youtube.com/vi/Onbn285lris/0.jpg)](https://www.youtube.com/watch?v=Onbn285lris)
 
 
 I downloaded [aracyc pathways file](./aracyc_pathways_input1.txt) which contains following information.
